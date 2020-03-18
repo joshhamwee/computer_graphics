@@ -198,11 +198,6 @@ void handleEvent(SDL_Event event)
       lightingType = 2;
       draw();
     }
-    else if(event.key.keysym.sym == SDLK_6){
-      drawType = 3;
-      lightingType = 3;
-      draw();
-    }
   }
   else if(event.type == SDL_MOUSEBUTTONDOWN) cout << "MOUSE CLICKED" << endl;
 }
@@ -472,7 +467,7 @@ void readMTL(){
 
 void readOBJ(){
 
-  char fileName[50] = "cornell-box.obj";
+  char fileName[50] = "HackspaceLogo/logo.obj";
   string line;
   Colour currentColour;
   std::vector<vec3> tempPoints;
@@ -689,35 +684,9 @@ void filledRaytracedTriangles(){
           if (lightingType == 2) {
             if (hardShadow(currentTriangle)) {
               brightness = 0.1f;
-            }
-            if (hardShadow(currentTriangleLEFT)) {
               brightnessLEFT = 0.1f;
-            }
-            if (hardShadow(currentTriangleRIGHT)) {
               brightnessRIGHT = 0.1f;
-            }
-            if (hardShadow(currentTriangleTOP)) {
               brightnessTOP = 0.1f;
-            }
-            if (hardShadow(currentTriangleBOTTOM)) {
-              brightnessBOTTOM = 0.1f;
-            }
-          }
-
-          if (lightingType == 3) {
-            if (hardShadow(currentTriangle)) {
-              brightness = 0.1f;
-            }
-            if (hardShadow(currentTriangleLEFT)) {
-              brightnessLEFT = 0.1f;
-            }
-            if (hardShadow(currentTriangleRIGHT)) {
-              brightnessRIGHT = 0.1f;
-            }
-            if (hardShadow(currentTriangleTOP)) {
-              brightnessTOP = 0.1f;
-            }
-            if (hardShadow(currentTriangleBOTTOM)) {
               brightnessBOTTOM = 0.1f;
             }
           }
