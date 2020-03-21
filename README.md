@@ -6,7 +6,7 @@
 
 [![HitCount](http://hits.dwyl.com/{joshhamwee}/{computer-graphics}.svg)](http://hits.dwyl.com/{joshhamwee}/{computer-graphics})
 [![Repo](https://img.shields.io/github/repo-size/joshhamwee/computer_graphics)](https://img.shields.io/github/repo-size/joshhamwee/computer_graphics)
-[![Stable](https://poser.pugx.org/joshhamwee/xtra/v/stable.svg)](https://poser.pugx.org/joshhamwee/xtra/v/stable.svg)
+[![Issues](https://img.shields.io/github/issues/joshhamwee/computer_graphics)](https://img.shields.io/github/issues/joshhamwee/computer_graphics)
 [![Unstable](https://poser.pugx.org/joshhamwee/xtra/v/unstable.svg)](https://poser.pugx.org/joshhamwee/xtra/v/unstable.svg)
 [![License](https://poser.pugx.org/joshhamwee/xtra/license.svg)](https://poser.pugx.org/joshhamwee/xtra/license.svg)
 
