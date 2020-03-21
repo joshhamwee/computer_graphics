@@ -7,24 +7,8 @@
 [![HitCount](http://hits.dwyl.com/{joshhamwee}/{computer-graphics}.svg)](http://hits.dwyl.com/{joshhamwee}/{computer-graphics})
 [![Repo](https://img.shields.io/github/repo-size/joshhamwee/computer_graphics)](https://img.shields.io/github/repo-size/joshhamwee/computer_graphics)
 [![Issues](https://img.shields.io/github/issues/joshhamwee/computer_graphics)](https://img.shields.io/github/issues/joshhamwee/computer_graphics)
-[![Unstable](https://poser.pugx.org/joshhamwee/xtra/v/unstable.svg)](https://poser.pugx.org/joshhamwee/xtra/v/unstable.svg)
-[![License](https://poser.pugx.org/joshhamwee/xtra/license.svg)](https://poser.pugx.org/joshhamwee/xtra/license.svg)
 
 ## Table of Contents
-
-> Subtitle or Short Description Goes Here
-
-> ideally one sentence
-
-> include terms/tags that can be searched
-
-**Badges will go here**
-
-## Table of Contents
-
-> If your `README` has a lot of info, section headers might be nice.
->
-> > > > > > > b6d2940c906a02cb76ccaf8178aaccb051a48d88
 
 - [Installation](#installation)
 - [Features](#features)
