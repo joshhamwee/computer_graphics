@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <iostream>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
 
 using namespace std;
 using namespace glm;
@@ -29,7 +31,7 @@ void drawFilledTriangle(CanvasTriangle triangle);
 std::vector<uint32_t> readPPM();
 void savePPM();
 void readMTL();
-void readOBJ();
+void readOBJ(char fileName[50]);
 void wireframe();
 void filledRasterisedTriangles();
 void filledRaytracedTriangles();
@@ -49,7 +51,7 @@ std::vector<CanvasTriangle> projectedTriangles;
 std::vector<RayTriangleIntersection> intersectedTriangles;
 std::vector<float> depthBuffer;
 glm::vec3 camera(0,0,HEIGHT/30);
-float imagePlaneDistance = HEIGHT/3;
+float imagePlaneDistance =HEIGHT/3;
 mat3 camera_orientation(vec3(1.0,0.0,0.0),vec3(0.0,1.0,0.0),vec3(0.0,0.0,1.0));
 vec3 lightPosition(-0.2334011,4,-3.043968);
 vec3 lightColour = 14.f * vec3(1,1,1);
@@ -68,7 +70,8 @@ int main(int argc, char* argv[])
   SDL_Event event;
 
   readMTL();
-  readOBJ();
+  readOBJ("cornell-box.obj");
+  readOBJ("logo.obj");
   wireframe();
   while(true)
   {
@@ -467,9 +470,9 @@ void readMTL(){
   }
 }
 
-void readOBJ(){
+void readOBJ(char fileName[50]){
 
-  char fileName[50] = "cornell-box.obj";
+
   string line;
   Colour currentColour;
   std::vector<vec3> tempPoints;
@@ -481,30 +484,42 @@ void readOBJ(){
   getline(infile, line);
   getline(infile, line);
 
+
   while (infile.is_open()) {
 
 
     //First line is object name --Ignored for now
     getline(infile, line);
 
+
     //Can search for colour?
     getline(infile, line);
     string colour = line.substr(7,line.find("\n"));
 
+
+
     getline(infile, line);
-    while (line.substr(0,1) == "v") {
+    while (line.substr(0,1) == "v" && line.substr(0,2)!= "vt") {
       float x, y, z;
       std::string* splitLine = split(line, char(32));
       x = stof(splitLine[1]);
       y = stof(splitLine[2]);
       z = stof(splitLine[3]);
 
+      if (strncmp(fileName,"logo.obj",8)==0){
+        x = (x /250)-1;
+        y = y/250+2;
+        z = z/250-1;
+      }
+
       vec3 temp(x,y,z);
       tempPoints.push_back(temp);
       getline(infile, line);
     }
 
-    while (line.substr(0,1) == "f") {
+
+    while (line.substr(0,1) == "f" || line.substr(0,2) =="vt") {
+      if (line.substr(0,1) == "f"){
       int a,b,c;
       const char* chh=line.c_str();
       sscanf(chh, "f %i/ %i/ %i/", &a, &b, &c);
@@ -518,6 +533,11 @@ void readOBJ(){
         }
       }
       triangles.push_back(tempTriangle);
+    }
+
+    else if (line.substr(0,2) =="vt") {
+
+    }
 
       getline(infile, line);
     }
