@@ -56,6 +56,7 @@ vec3 lightColour = 14.f * vec3(1,1,1);
 vec3 centreModel(0.5,-0.16,-2.5);
 int drawType = 1;
 int lightingType = 0;
+bool mirroredBox = false;
 
 
 
@@ -193,7 +194,8 @@ void handleEvent(SDL_Event event)
     }
     else if(event.key.keysym.sym == SDLK_6){
       drawType = 3;
-      lightingType = 3;
+      lightingType = 2;
+      mirroredBox = !mirroredBox;
     }
     else if(event.key.keysym.sym == SDLK_p){
       update(0);
@@ -765,8 +767,7 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
         currentClosestIntersection.distanceFromLight = glm::length(lightPosition - intersection);
         currentClosestIntersection.triangleIndex = i;
 
-        if (i >= 22) {
-
+        if (i >= 22 && mirroredBox) {
           vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
           vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
           vec3 incidentRay = raySource - intersection;
