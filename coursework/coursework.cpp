@@ -729,11 +729,7 @@ void filledRaytracedTriangles(){
           adjusted.red = (currentTriangle.intersectedTriangle.colour.red * brightness + currentTriangleLEFT.intersectedTriangle.colour.red * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.red * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.red * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.red * brightnessBOTTOM)/5;
           adjusted.green = (currentTriangle.intersectedTriangle.colour.green * brightness + currentTriangleLEFT.intersectedTriangle.colour.green * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.green * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.green * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.green * brightnessBOTTOM)/5;
           adjusted.blue = (currentTriangle.intersectedTriangle.colour.blue * brightness + currentTriangleLEFT.intersectedTriangle.colour.blue * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.blue * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.blue * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.blue * brightnessBOTTOM)/5;
-          // adjusted.red = currentTriangle.intersectedTriangle.colour.red * brightness;
-          // adjusted.green =currentTriangle.intersectedTriangle.colour.green * brightness;
-          // adjusted.blue =currentTriangle.intersectedTriangle.colour.blue * brightness;
           drawPoint(i,j,adjusted);
-
         }
         else{
           drawPoint(i,j,currentTriangle.intersectedTriangle.colour);
@@ -767,6 +763,8 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
         currentClosestIntersection.distanceFromLight = glm::length(lightPosition - intersection);
         currentClosestIntersection.triangleIndex = i;
 
+        //If the mirror toggle is on, then for the tall box object reflect the incident rays.
+        //Find new intersection on another triangle and use that colour.
         if (i >= 22 && mirroredBox) {
           vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
           vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
@@ -787,6 +785,8 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
 return currentClosestIntersection;
 }
 
+// Similar to function above, however ignores the tall box that is the mirrored material
+// This is used to get the colour of the reflected triangle in the tall box
 Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
 
     RayTriangleIntersection currentClosestReflectedIntersection;
@@ -799,22 +799,18 @@ Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
       mat3 DEMatrix((rayDirection),e0,e1);
       vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 
-
-
       if (possibleSolution[1] > 0.0 && possibleSolution[2] > 0.0 && (possibleSolution[1] + possibleSolution[2] < 1.0) && possibleSolution[0] >= 0.0) {
         if(possibleSolution[0] < currentClosestReflectedIntersection.distanceFromCamera && possibleSolution[0] > 1){
-
           vec3 intersection = triangles[i].vertices[0] + possibleSolution[1]*e0 + possibleSolution[2]*e1;
           currentClosestReflectedIntersection.distanceFromCamera = possibleSolution[0];
           currentClosestReflectedIntersection.intersectionPoint = intersection;
           currentClosestReflectedIntersection.intersectedTriangle = triangles[i];
           currentClosestReflectedIntersection.distanceFromLight = glm::length(lightPosition - intersection);
           currentClosestReflectedIntersection.triangleIndex = i;
-
-
       }
     }
   }
+  //Only need to return the colour. If there is no intersection with a surface return background colour such as grey.
   if (currentClosestReflectedIntersection.distanceFromCamera == std::numeric_limits<float>::max()) {
     return Colour(50,50,50);
   }else{
