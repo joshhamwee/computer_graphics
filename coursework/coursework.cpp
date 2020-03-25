@@ -20,15 +20,13 @@ using namespace glm;
 #define HEIGHT 680
 #define PI 3.14159
 
-
 void draw();
-void update(int animation_type);
+void update();
 void handleEvent(SDL_Event event);
 void drawPoint(int x, int y, Colour colour);
 void drawLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour);
 void drawStrokedTriangle(CanvasTriangle triangle);
 void drawFilledTriangle(CanvasTriangle triangle);
-std::vector<uint32_t> readPPM();
 void savePPM();
 void readMTL();
 void readOBJ(char fileName[50]);
@@ -38,32 +36,37 @@ void filledRaytracedTriangles();
 void fillTopTriangle(CanvasPoint ptop, CanvasPoint pmid, CanvasPoint pbottom, uint32_t colour);
 void fillBottomTriangle(CanvasPoint ptop, CanvasPoint pmid, CanvasPoint pbottom, uint32_t colour);
 void drawHorizontalLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour);
+std::vector<uint32_t> readPPM();
 RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource);
 float diffuseLighting(RayTriangleIntersection currentTriangle);
 bool hardShadow(RayTriangleIntersection currentTriangle);
 Colour getClosestReflection(vec3 rayDirection, vec3 raySource);
 
-
+//Defining global variables
 DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
 std::vector<Colour> colours;
 std::vector<ModelTriangle> triangles;
 std::vector<CanvasTriangle> projectedTriangles;
 std::vector<RayTriangleIntersection> intersectedTriangles;
 std::vector<float> depthBuffer;
-glm::vec3 camera(0,0,HEIGHT/30);
+
+//Variables that control camera and image
 float imagePlaneDistance =HEIGHT/3;
 mat3 camera_orientation(vec3(1.0,0.0,0.0),vec3(0.0,1.0,0.0),vec3(0.0,0.0,1.0));
+vec3 camera(0,0,HEIGHT/30);
 vec3 lightPosition(-0.2334011,4,-3.043968);
 vec3 lightColour = 14.f * vec3(1,1,1);
 vec3 centreModel(0.5,-0.16,-2.5);
+
+//Control variables for type of rendering
 int drawType = 1;
 int lightingType = 0;
+int animationType = -1;
 bool mirroredBox = false;
 
 
-
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
+  //Set depth buffer to infinity on load-up
   for (size_t i = 0; i < WIDTH*HEIGHT; i++) {
     depthBuffer.push_back(std::numeric_limits<float>::infinity());
   }
@@ -72,20 +75,23 @@ int main(int argc, char* argv[])
   readMTL();
   readOBJ("cornell-box.obj");
   readOBJ("logo.obj");
+
+  //Draw the wireframe on load-up
   wireframe();
-  while(true)
-  {
+
+  //Using the standard animation flow of event, update, draw.
+  while(true){
     // We MUST poll for events - otherwise the window will freeze !
     if(window.pollForInputEvents(&event)) {
       handleEvent(event);
     }
+    update();
     draw();
     window.renderFrame();
   }
 }
 
-void draw()
-{
+void draw(){
   window.clearPixels();
   if (drawType == 1) {
     wireframe();
@@ -101,9 +107,8 @@ void draw()
   }
 }
 
-void update(int animation_type)
-{
-  if (animation_type == 0) {
+void update(){
+  if (animationType == 0) {
     //Here we are implementing rotation of the object whilst potentially panning the camera out
     mat3 rotationMatrix(vec3(cos(PI/90),0,sin(PI/90)),vec3(0.0,1.0,0),vec3(-sin(PI/90),0,cos(PI/90)));
     for (size_t triangle_count = 0; triangle_count < triangles.size(); triangle_count++) {
@@ -115,6 +120,7 @@ void update(int animation_type)
     camera[1] += 0.05;
     camera[2] += 0.05;
   }
+  animationType = -1;
 }
 
 void handleEvent(SDL_Event event)
@@ -137,6 +143,29 @@ void handleEvent(SDL_Event event)
     }
     else if(event.key.keysym.sym == SDLK_RSHIFT){
       camera[2] -= 3;
+    }
+    else if(event.key.keysym.sym == SDLK_1){
+      drawType = 1;
+    }
+    else if(event.key.keysym.sym == SDLK_2){
+      drawType = 2;
+    }
+    else if(event.key.keysym.sym == SDLK_3){
+      lightingType = 0;
+      drawType = 3;
+    }
+    else if(event.key.keysym.sym == SDLK_4){
+      drawType = 3;
+      lightingType = 1;
+    }
+    else if(event.key.keysym.sym == SDLK_5){
+      drawType = 3;
+      lightingType = 2;
+    }
+    else if(event.key.keysym.sym == SDLK_6){
+      drawType = 3;
+      lightingType = 2;
+      mirroredBox = !mirroredBox;
     }
     else if(event.key.keysym.sym == SDLK_w){
       float theta = -PI/200;
@@ -163,23 +192,16 @@ void handleEvent(SDL_Event event)
       camera_orientation = mat3(vec3(1.0,0.0,0.0),vec3(0.0,1.0,0.0),vec3(0.0,0.0,1.0));
       camera = vec3(0,0,HEIGHT/30);
     }
-    else if(event.key.keysym.sym == SDLK_1){
-      drawType = 1;
-    }
-    else if(event.key.keysym.sym == SDLK_2){
-      drawType = 2;
-    }
-    else if(event.key.keysym.sym == SDLK_3){
-      lightingType = 0;
-      drawType = 3;
-    }
     else if(event.key.keysym.sym == SDLK_m){
+      //Write the screen to an image
       savePPM();
     }
     else if(event.key.keysym.sym == SDLK_n){
+      //Read PPM file from current directory
       drawType = 4;
     }
     else if(event.key.keysym.sym == SDLK_l){
+      //Look At
       vec3 forward = glm::normalize(camera-centreModel);
       vec3 right = (glm::cross(vec3(0,1,0), forward));
       vec3 up = (glm::cross(forward,right));
@@ -187,27 +209,16 @@ void handleEvent(SDL_Event event)
       camera_orientation[0] = right;
       camera_orientation[1] = up;
     }
-    else if(event.key.keysym.sym == SDLK_4){
-      drawType = 3;
-      lightingType = 1;
-    }
-    else if(event.key.keysym.sym == SDLK_5){
-      drawType = 3;
-      lightingType = 2;
-    }
-    else if(event.key.keysym.sym == SDLK_6){
-      drawType = 3;
-      lightingType = 2;
-      mirroredBox = !mirroredBox;
-    }
     else if(event.key.keysym.sym == SDLK_p){
-      update(0);
+      //Animation orbit and pan out
+      animationType = 0;
     }
   }
   else if(event.type == SDL_MOUSEBUTTONDOWN) cout << "MOUSE CLICKED" << endl;
 }
 
 void drawPoint(int x, int y, Colour colour){
+  //Bit pack the desired colour to uint_32 and then using SDL set colour of window
   uint32_t currentColour = (255<<24) + ((colour.red)<<16) + ((colour.green)<<8) + (colour.blue);
   window.setPixelColour(x,y,currentColour);
 }
@@ -226,14 +237,16 @@ void drawLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour){
     float y = p1.y + (yStepSize*i);
     window.setPixelColour(round(x), round(y), colour);
   }
-
 }
 
 void drawHorizontalLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour){
+  //Comparison for larger value
   if (p1.x > p2.x) {
       swap(p1.x, p2.x);
       swap(p1.depth, p2.depth);
   }
+
+  //Find step size
   float zslope;
   if (p2.x - p1.x == 0) {
     zslope = 0;
@@ -242,21 +255,19 @@ void drawHorizontalLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour){
     zslope = (p2.depth - p1.depth)/(p2.x - p1.x);
   }
 
+  //Implement the draw by using depthBuffer to make sure it is the closest point
   float currentZ = p1.depth;
   for (size_t i = p1.x; i <= p2.x; i++) {
     if(i + (p1.y)*WIDTH > 0 && i + (p1.y)*WIDTH < HEIGHT*WIDTH){
       currentZ = currentZ + zslope;
       if (currentZ != 0) {
         if (1/currentZ < depthBuffer[i + (p1.y)*WIDTH] ) {
-
           depthBuffer[i + (p1.y)*WIDTH] = 1/currentZ;
-
           window.setPixelColour(i, p1.y, colour);
         }
       }
     }
-    }
-
+  }
 }
 
 void drawStrokedTriangle(CanvasTriangle triangle){
@@ -273,6 +284,7 @@ void drawFilledTriangle(CanvasTriangle triangle){
   CanvasPoint pmid = triangle.vertices[1];
   CanvasPoint pbottom = triangle.vertices[2];
 
+  //Swaps required so that we know the positioning of all three points
   if (pbottom.y < pmid.y){
     swap(pbottom.y, pmid.y);
     swap(pbottom.x, pmid.x);
@@ -395,37 +407,32 @@ std::vector<uint32_t> readPPM(){
 
 void savePPM(){
   const char *filename = "out.ppm";
-  /* 2D array for colors (shades of gray) */
-  // char data[HEIGHT][WIDTH][3];
-  /* color component is coded from 0 to 255 ;  it is 8 bit color file */
+
   const int MaxColorComponentValue = 255;
   FILE * fp;
-  /* comment should start with # */
-  const char *comment = "# this is my new binary pgm file";
+  const char *comment = "binary pgm file";
+
   fp = fopen(filename, "wb");
-  /* write header to the file */
+
   fprintf(fp, "P6\n%s\n%d %d\n%d\n", comment, WIDTH, HEIGHT,
           MaxColorComponentValue);
 
-  /* fill the data array */
+  //Fill the array with colour values
   for (int y = 0; y < HEIGHT; ++y) {
     for (int x = 0; x < WIDTH; ++x) {
       uint32_t wholeColour = window.getPixelColour(x,y);
       uint8_t colour[3];
       char colour_char[3];
+
+      //Reverse shift the colours to get uint8 values
       colour[0] = (wholeColour >> 16) & 255;
       colour[1] = (wholeColour >> 8) & 255;
       colour[2] = (wholeColour) & 255;
 
-      // data[y][x][0] = (char)red;
-      // data[y][x][1] = (char)green;
-      // data[y][x][2] = (char)blue;
       colour_char[0] = (char)(colour[0]);
       colour_char[1] = (char)(colour[1]);
       colour_char[2] = (char)(colour[2]);
       fwrite(colour_char,1,3,fp);
-      // fwrite(colour_char,1,1,fp);
-      // fwrite(colour_char[2],1,1,fp);
     }
   }
 
@@ -433,15 +440,14 @@ void savePPM(){
   printf("OK - file %s saved\n", filename);
 }
 
-
+//Read in the material file
 void readMTL(){
-
   char fileName[50] = "cornell-box.mtl";
   string line;
   int red, green, blue;
   Colour currentColour;
-
   ifstream infile;
+
   infile.open(fileName);
   while (infile.is_open()) {
     getline(infile, line);
@@ -470,36 +476,26 @@ void readMTL(){
   }
 }
 
+//Read in the object file
 void readOBJ(char fileName[50]){
-
-
   string line;
   Colour currentColour;
   std::vector<vec3> tempPoints;
-
   ifstream infile;
+
   infile.open(fileName);
 
   //Intro lines to ignore
   getline(infile, line);
   getline(infile, line);
 
-
   while (infile.is_open()) {
-
-
     //First line is object name --Ignored for now
     getline(infile, line);
-
-
-    //Can search for colour?
     getline(infile, line);
     string colour = line.substr(7,line.find("\n"));
-
-
-
     getline(infile, line);
-    while (line.substr(0,1) == "v" && line.substr(0,2)!= "vt") {
+    while (line.substr(0,1) == "v" && line.substr(0,2)!= "vt") { //If vertex then append new temporary point
       float x, y, z;
       std::string* splitLine = split(line, char(32));
       x = stof(splitLine[1]);
@@ -516,9 +512,7 @@ void readOBJ(char fileName[50]){
       tempPoints.push_back(temp);
       getline(infile, line);
     }
-
-
-    while (line.substr(0,1) == "f" || line.substr(0,2) =="vt") {
+    while (line.substr(0,1) == "f" || line.substr(0,2) =="vt") { //If face then create a new triangle with specified vertices
       if (line.substr(0,1) == "f"){
       int a,b,c;
       const char* chh=line.c_str();
@@ -534,14 +528,10 @@ void readOBJ(char fileName[50]){
       }
       triangles.push_back(tempTriangle);
     }
-
     else if (line.substr(0,2) =="vt") {
-
     }
-
       getline(infile, line);
     }
-
     if (infile.eof()) {
       infile.close();
       break;
@@ -556,8 +546,6 @@ void wireframe(){
   for (size_t i = 0; i < WIDTH*HEIGHT; i++) {
     depthBuffer[i] = std::numeric_limits<float>::infinity();
   }
-
-
 
   for (size_t i = 0; i < triangles.size(); i++) {
     CanvasTriangle tempTriangle;
@@ -590,9 +578,6 @@ void filledRasterisedTriangles(){
   for (size_t i = 0; i < WIDTH*HEIGHT; i++) {
     depthBuffer[i] = std::numeric_limits<float>::infinity();
   }
-
-
-
   for (size_t i = 0; i < triangles.size(); i++) {
     CanvasTriangle tempTriangle;
     for (size_t j = 0; j < 3; j++) {
@@ -612,11 +597,9 @@ void filledRasterisedTriangles(){
     tempTriangle.colour = triangles[i].colour;
     projectedTriangles.push_back(tempTriangle);
   }
-
-   for (size_t i = 0; i < projectedTriangles.size(); i++) {
-    drawFilledTriangle(projectedTriangles[i]);
-
-  }
+  for (size_t i = 0; i < projectedTriangles.size(); i++) {
+     drawFilledTriangle(projectedTriangles[i]);
+   }
 }
 
 float diffuseLighting(RayTriangleIntersection currentTriangle){
@@ -672,6 +655,7 @@ bool hardShadow(RayTriangleIntersection currentTriangle){
 }
 
 void filledRaytracedTriangles(){
+  //Make sure we have the correct position of the image plane in the world co-ordinates
   vec3 topRightImagePlaneWorld(0,0,0);
   topRightImagePlaneWorld.z = floor(camera.z - imagePlaneDistance);
   topRightImagePlaneWorld.x = floor(camera.x + 0.5*WIDTH);
@@ -679,7 +663,7 @@ void filledRaytracedTriangles(){
 
   for (size_t j = 0; j < HEIGHT; j++) {
     for (size_t i = 0; i < WIDTH; i++) {
-
+      //Create 5 rays as we are anti-aliasing
       vec3 rayDirection(topRightImagePlaneWorld.x-i, topRightImagePlaneWorld.y+j, imagePlaneDistance);
       vec3 rayDirectionLEFT(topRightImagePlaneWorld.x-i-0.5, topRightImagePlaneWorld.y+j, imagePlaneDistance);
       vec3 rayDirectionRIGHT(topRightImagePlaneWorld.x-i+0.5, topRightImagePlaneWorld.y+j, imagePlaneDistance);
@@ -695,6 +679,8 @@ void filledRaytracedTriangles(){
       rayDirectionTOP = glm::normalize(rayDirectionTOP);
       rayDirectionBOTTOM = rayDirectionBOTTOM*glm::inverse(camera_orientation);
       rayDirectionBOTTOM = glm::normalize(rayDirectionBOTTOM);
+
+      //Get closest intersecting trinagles for all the rays
       RayTriangleIntersection currentTriangle = getClosestIntersection(rayDirection, camera);
       RayTriangleIntersection currentTriangleLEFT = getClosestIntersection(rayDirectionLEFT, camera);
       RayTriangleIntersection currentTriangleRIGHT = getClosestIntersection(rayDirectionRIGHT, camera);
@@ -703,12 +689,14 @@ void filledRaytracedTriangles(){
 
       if (currentTriangle.distanceFromCamera != std::numeric_limits<float>::max()) {
         if (lightingType == 1 || lightingType == 2) {
+          //Apply diffuseLighting to all the triangles from the rays
           float brightness = diffuseLighting(currentTriangle);
           float brightnessLEFT = diffuseLighting(currentTriangleLEFT);
           float brightnessRIGHT = diffuseLighting(currentTriangleRIGHT);
           float brightnessTOP = diffuseLighting(currentTriangleTOP);
           float brightnessBOTTOM = diffuseLighting(currentTriangleBOTTOM);
 
+          //Check if the intersected point returned is a hard shadow
           if (lightingType == 2) {
             if (hardShadow(currentTriangle)) {
               brightness = 0.1f;
@@ -727,24 +715,7 @@ void filledRaytracedTriangles(){
             }
           }
 
-          if (lightingType == 3) {
-            if (hardShadow(currentTriangle)) {
-              brightness = 0.1f;
-            }
-            if (hardShadow(currentTriangleLEFT)) {
-              brightnessLEFT = 0.1f;
-            }
-            if (hardShadow(currentTriangleRIGHT)) {
-              brightnessRIGHT = 0.1f;
-            }
-            if (hardShadow(currentTriangleTOP)) {
-              brightnessTOP = 0.1f;
-            }
-            if (hardShadow(currentTriangleBOTTOM)) {
-              brightnessBOTTOM = 0.1f;
-            }
-          }
-
+          //Take an average of all the rays for a clearer & sharper render
           Colour adjusted;
           adjusted.red = (currentTriangle.intersectedTriangle.colour.red * brightness + currentTriangleLEFT.intersectedTriangle.colour.red * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.red * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.red * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.red * brightnessBOTTOM)/5;
           adjusted.green = (currentTriangle.intersectedTriangle.colour.green * brightness + currentTriangleLEFT.intersectedTriangle.colour.green * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.green * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.green * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.green * brightnessBOTTOM)/5;
@@ -760,19 +731,20 @@ void filledRaytracedTriangles(){
 }
 
 RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource){
-
   RayTriangleIntersection currentClosestIntersection;
+
+  //Set distance from camera to infinity for all triangles
   currentClosestIntersection.distanceFromCamera = std::numeric_limits<float>::max();
   for (size_t i = 0; i < triangles.size(); i++) {
     vec3 e0 = triangles[i].vertices[1] - triangles[i].vertices[0];
     vec3 e1 = triangles[i].vertices[2] - triangles[i].vertices[0];
     vec3 SPVector = vec3(raySource - triangles[i].vertices[0]);
 
+    //Calculate intersecting triangles along the ray
     mat3 DEMatrix((rayDirection),e0,e1);
     vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 
-
-
+    //If matrix above meets this criteria then it is a true intersection
     if (possibleSolution[1] > 0.0 && possibleSolution[2] > 0.0 && (possibleSolution[1] + possibleSolution[2] < 1.0) && possibleSolution[0] >= 0.0) {
       if(possibleSolution[0] < currentClosestIntersection.distanceFromCamera && possibleSolution[0] > 1){
 
@@ -785,7 +757,7 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
 
         //If the mirror toggle is on, then for the tall box object reflect the incident rays.
         //Find new intersection on another triangle and use that colour.
-        if (i >= 22 && mirroredBox) {
+        if (i >= 22 && i<32 && mirroredBox) {
           vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
           vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
           vec3 incidentRay = raySource - intersection;
@@ -811,7 +783,11 @@ Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
 
     RayTriangleIntersection currentClosestReflectedIntersection;
     currentClosestReflectedIntersection.distanceFromCamera = std::numeric_limits<float>::max();
-    for (size_t i = 0; i < 22; i++) {
+    for (size_t i = 0; i<triangles.size(); i++) {
+      if (i == 22) {
+        i = 32;
+        break;
+      }
       vec3 e0 = triangles[i].vertices[1] - triangles[i].vertices[0];
       vec3 e1 = triangles[i].vertices[2] - triangles[i].vertices[0];
       vec3 SPVector = vec3(raySource - triangles[i].vertices[0]);
