@@ -605,7 +605,7 @@ void filledRasterisedTriangles(){
 float diffuseLighting(RayTriangleIntersection currentTriangle){
   float brightness;
   if (currentTriangle.distanceFromLight != 0) {
-    brightness = 2/(0.1f * PI * pow(currentTriangle.distanceFromLight,2));
+    brightness = 3.5/(0.1f * PI * pow(currentTriangle.distanceFromLight,2));
   }else{
     brightness = 1;
   }
