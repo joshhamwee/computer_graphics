@@ -20,7 +20,7 @@ using namespace glm;
 
 
 void draw();
-void update();
+void update(int animation_type);
 void handleEvent(SDL_Event event);
 void drawPoint(int x, int y, Colour colour);
 void drawLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour);
@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
     if(window.pollForInputEvents(&event)) {
       handleEvent(event);
     }
+    draw();
     window.renderFrame();
   }
 }
@@ -95,9 +96,20 @@ void draw()
   }
 }
 
-void update()
+void update(int animation_type)
 {
-  // Function for performing animation (shifting artifacts or moving the camera)
+  if (animation_type == 0) {
+    //Here we are implementing rotation of the object whilst potentially panning the camera out
+    mat3 rotationMatrix(vec3(cos(PI/90),0,sin(PI/90)),vec3(0.0,1.0,0),vec3(-sin(PI/90),0,cos(PI/90)));
+    for (size_t triangle_count = 0; triangle_count < triangles.size(); triangle_count++) {
+      triangles[triangle_count].vertices[0] = triangles[triangle_count].vertices[0] * rotationMatrix;
+      triangles[triangle_count].vertices[1] = triangles[triangle_count].vertices[1] * rotationMatrix;
+      triangles[triangle_count].vertices[2] = triangles[triangle_count].vertices[2] * rotationMatrix;
+    }
+    //Panning out and up whilst this is going on
+    camera[1] += 0.05;
+    camera[2] += 0.05;
+  }
 }
 
 void handleEvent(SDL_Event event)
@@ -105,79 +117,62 @@ void handleEvent(SDL_Event event)
   if(event.type == SDL_KEYDOWN) {
     if(event.key.keysym.sym == SDLK_DOWN){
       camera[1] -= 0.1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_UP){
       camera[1] += 0.1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_LEFT){
       camera[0] -= 0.1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_RIGHT){
       camera[0] += 0.1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_LSHIFT){
       camera[2] += 3;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_RSHIFT){
       camera[2] -= 3;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_w){
       float theta = -PI/200;
       mat3 rotationMatrix(vec3(1.0,0.0,0.0),vec3(0.0,cos(theta),-sin(theta)),vec3(0.0,sin(theta),cos(theta)));
       camera_orientation =  camera_orientation * rotationMatrix;
 
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_a){
       float theta = -PI/200;
       mat3 rotationMatrix(vec3(cos(theta),0,sin(theta)),vec3(0.0,1.0,0),vec3(-sin(theta),0,cos(theta)));
       camera_orientation =  camera_orientation * rotationMatrix;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_s){
       float theta = PI/200;
       mat3 rotationMatrix(vec3(1.0,0.0,0.0),vec3(0.0,cos(theta),-sin(theta)),vec3(0.0,sin(theta),cos(theta)));
       camera_orientation =  camera_orientation * rotationMatrix;
-
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_d){
       float theta = PI/200;
       mat3 rotationMatrix(vec3(cos(theta),0,sin(theta)),vec3(0.0,1.0,0),vec3(-sin(theta),0,cos(theta)));
       camera_orientation =  camera_orientation * rotationMatrix;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_r){
       camera_orientation = mat3(vec3(1.0,0.0,0.0),vec3(0.0,1.0,0.0),vec3(0.0,0.0,1.0));
       camera = vec3(0,0,HEIGHT/30);
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_1){
       drawType = 1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_2){
       drawType = 2;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_3){
       lightingType = 0;
       drawType = 3;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_m){
       savePPM();
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_n){
       drawType = 4;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_l){
       vec3 forward = glm::normalize(camera-centreModel);
@@ -186,22 +181,21 @@ void handleEvent(SDL_Event event)
       camera_orientation[2] = forward;
       camera_orientation[0] = right;
       camera_orientation[1] = up;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_4){
       drawType = 3;
       lightingType = 1;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_5){
       drawType = 3;
       lightingType = 2;
-      draw();
     }
     else if(event.key.keysym.sym == SDLK_6){
       drawType = 3;
       lightingType = 3;
-      draw();
+    }
+    else if(event.key.keysym.sym == SDLK_p){
+      update(0);
     }
   }
   else if(event.type == SDL_MOUSEBUTTONDOWN) cout << "MOUSE CLICKED" << endl;
@@ -541,7 +535,7 @@ void wireframe(){
   }
 
 
-  std::cout << camera_orientation[1].x << ", " << camera_orientation[1].y << ", "<< camera_orientation[1].z << ", "<< '\n';
+
   for (size_t i = 0; i < triangles.size(); i++) {
     CanvasTriangle tempTriangle;
     for (size_t j = 0; j < 3; j++) {
@@ -575,7 +569,7 @@ void filledRasterisedTriangles(){
   }
 
 
-  std::cout << camera_orientation[1].x << ", " << camera_orientation[1].y << ", "<< camera_orientation[1].z << ", "<< '\n';
+
   for (size_t i = 0; i < triangles.size(); i++) {
     CanvasTriangle tempTriangle;
     for (size_t j = 0; j < 3; j++) {
