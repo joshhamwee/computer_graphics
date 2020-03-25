@@ -39,6 +39,7 @@ void drawHorizontalLine(CanvasPoint p1, CanvasPoint p2, uint32_t colour);
 RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource);
 float diffuseLighting(RayTriangleIntersection currentTriangle);
 bool hardShadow(RayTriangleIntersection currentTriangle);
+Colour getClosestReflection(vec3 rayDirection, vec3 raySource);
 
 
 DrawingWindow window = DrawingWindow(WIDTH, HEIGHT, false);
@@ -597,7 +598,13 @@ void filledRasterisedTriangles(){
 }
 
 float diffuseLighting(RayTriangleIntersection currentTriangle){
-  float brightness = 2/(0.1f * PI * pow(currentTriangle.distanceFromLight,2));
+  float brightness;
+  if (currentTriangle.distanceFromLight != 0) {
+    brightness = 2/(0.1f * PI * pow(currentTriangle.distanceFromLight,2));
+  }else{
+    brightness = 1;
+  }
+
   if (brightness > 1) {
     brightness = 1;
   }else if (brightness < 0) {
@@ -720,7 +727,9 @@ void filledRaytracedTriangles(){
           adjusted.red = (currentTriangle.intersectedTriangle.colour.red * brightness + currentTriangleLEFT.intersectedTriangle.colour.red * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.red * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.red * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.red * brightnessBOTTOM)/5;
           adjusted.green = (currentTriangle.intersectedTriangle.colour.green * brightness + currentTriangleLEFT.intersectedTriangle.colour.green * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.green * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.green * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.green * brightnessBOTTOM)/5;
           adjusted.blue = (currentTriangle.intersectedTriangle.colour.blue * brightness + currentTriangleLEFT.intersectedTriangle.colour.blue * brightnessLEFT + currentTriangleRIGHT.intersectedTriangle.colour.blue * brightnessRIGHT + currentTriangleTOP.intersectedTriangle.colour.blue * brightnessTOP + currentTriangleBOTTOM.intersectedTriangle.colour.blue * brightnessBOTTOM)/5;
-
+          // adjusted.red = currentTriangle.intersectedTriangle.colour.red * brightness;
+          // adjusted.green =currentTriangle.intersectedTriangle.colour.green * brightness;
+          // adjusted.blue =currentTriangle.intersectedTriangle.colour.blue * brightness;
           drawPoint(i,j,adjusted);
 
         }
@@ -756,8 +765,59 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
         currentClosestIntersection.distanceFromLight = glm::length(lightPosition - intersection);
         currentClosestIntersection.triangleIndex = i;
 
+        if (i >= 22) {
+
+          vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
+          vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
+          vec3 incidentRay = raySource - intersection;
+          incidentRay = glm::normalize(incidentRay);
+          vec3 normal = glm::cross(v0v2,v0v1);
+          vec3 reflectedRay = incidentRay -  2.0f*(glm::dot(normal, incidentRay) * normal);
+          reflectedRay = glm::normalize(reflectedRay);
+
+
+          currentClosestIntersection.intersectedTriangle.colour = getClosestReflection(reflectedRay, intersection);
+        }
+
     }
   }
 }
+
 return currentClosestIntersection;
+}
+
+Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
+
+    RayTriangleIntersection currentClosestReflectedIntersection;
+    currentClosestReflectedIntersection.distanceFromCamera = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < 22; i++) {
+      vec3 e0 = triangles[i].vertices[1] - triangles[i].vertices[0];
+      vec3 e1 = triangles[i].vertices[2] - triangles[i].vertices[0];
+      vec3 SPVector = vec3(raySource - triangles[i].vertices[0]);
+
+      mat3 DEMatrix((rayDirection),e0,e1);
+      vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
+
+
+
+      if (possibleSolution[1] > 0.0 && possibleSolution[2] > 0.0 && (possibleSolution[1] + possibleSolution[2] < 1.0) && possibleSolution[0] >= 0.0) {
+        if(possibleSolution[0] < currentClosestReflectedIntersection.distanceFromCamera && possibleSolution[0] > 1){
+
+          vec3 intersection = triangles[i].vertices[0] + possibleSolution[1]*e0 + possibleSolution[2]*e1;
+          currentClosestReflectedIntersection.distanceFromCamera = possibleSolution[0];
+          currentClosestReflectedIntersection.intersectionPoint = intersection;
+          currentClosestReflectedIntersection.intersectedTriangle = triangles[i];
+          currentClosestReflectedIntersection.distanceFromLight = glm::length(lightPosition - intersection);
+          currentClosestReflectedIntersection.triangleIndex = i;
+
+
+      }
+    }
+  }
+  if (currentClosestReflectedIntersection.distanceFromCamera == std::numeric_limits<float>::max()) {
+    return Colour(50,50,50);
+  }else{
+    return currentClosestReflectedIntersection.intersectedTriangle.colour;
+  }
+
 }
