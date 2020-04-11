@@ -55,6 +55,7 @@ float imagePlaneDistance =HEIGHT/3;
 mat3 camera_orientation(vec3(1.0,0.0,0.0),vec3(0.0,1.0,0.0),vec3(0.0,0.0,1.0));
 vec3 camera(0,0,HEIGHT/30);
 vec3 lightPosition(-0.2334011,4,-3.043968);
+//-3.043968
 vec3 lightColour = 14.f * vec3(1,1,1);
 vec3 centreModel(0.5,-0.16,-2.5);
 
@@ -74,7 +75,7 @@ int main(int argc, char* argv[]){
 
   readMTL();
   readOBJ("cornell-box.obj");
-  readOBJ("logo.obj");
+  // readOBJ("logo.obj");
 
   //Draw the wireframe on load-up
   wireframe();
@@ -111,14 +112,20 @@ void update(){
   if (animationType == 0) {
     //Here we are implementing rotation of the object whilst potentially panning the camera out
     mat3 rotationMatrix(vec3(cos(PI/90),0,sin(PI/90)),vec3(0.0,1.0,0),vec3(-sin(PI/90),0,cos(PI/90)));
-    for (size_t triangle_count = 0; triangle_count < triangles.size(); triangle_count++) {
-      triangles[triangle_count].vertices[0] = triangles[triangle_count].vertices[0] * rotationMatrix;
-      triangles[triangle_count].vertices[1] = triangles[triangle_count].vertices[1] * rotationMatrix;
-      triangles[triangle_count].vertices[2] = triangles[triangle_count].vertices[2] * rotationMatrix;
+    for (size_t triangle_count = 22; triangle_count < triangles.size(); triangle_count++) {
+      for (size_t i = 0; i < 3; i++) {
+        triangles[triangle_count].vertices[i].x = (triangles[triangle_count].vertices[i].x - (-1.929011));
+        triangles[triangle_count].vertices[i].y = (triangles[triangle_count].vertices[i].y - (0));
+        triangles[triangle_count].vertices[i].z = (triangles[triangle_count].vertices[i].z - (-3.508598));
+
+        triangles[triangle_count].vertices[i] = (triangles[triangle_count].vertices[i] * rotationMatrix);
+
+        triangles[triangle_count].vertices[i].x = (triangles[triangle_count].vertices[i].x + (-1.929011));
+        triangles[triangle_count].vertices[i].y = (triangles[triangle_count].vertices[i].y + (0));
+        triangles[triangle_count].vertices[i].z = (triangles[triangle_count].vertices[i].z + (-3.508598));
+      }
+
     }
-    //Panning out and up whilst this is going on
-    camera[1] += 0.05;
-    camera[2] += 0.05;
   }
   animationType = -1;
 }
@@ -170,7 +177,7 @@ void handleEvent(SDL_Event event)
     else if(event.key.keysym.sym == SDLK_7){
       drawType = 3;
       lightingType = 3;
-      mirroredBox = false;
+      mirroredBox = true;
     }
     else if(event.key.keysym.sym == SDLK_w){
       float theta = -PI/200;
@@ -771,7 +778,6 @@ void filledRaytracedTriangles(){
 
 
           if (lightingType == 3) {
-            brightness = 0.5f;
             if (softShadow(currentTriangle, lp1)) {
               brightness -= 0.1f;
             }
@@ -832,7 +838,7 @@ RayTriangleIntersection getClosestIntersection(vec3 rayDirection, vec3 raySource
 
         //If the mirror toggle is on, then for the tall box object reflect the incident rays.
         //Find new intersection on another triangle and use that colour.
-        if (i >= 22 && i<32 && mirroredBox) {
+        if (i >= 22 && mirroredBox) {
           vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
           vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
           vec3 incidentRay = raySource - intersection;
@@ -883,7 +889,7 @@ Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
   }
   //Only need to return the colour. If there is no intersection with a surface return background colour such as grey.
   if (currentClosestReflectedIntersection.distanceFromCamera == std::numeric_limits<float>::max()) {
-    return Colour(50,50,50);
+    return Colour(202,204,206);
   }else{
     return currentClosestReflectedIntersection.intersectedTriangle.colour;
   }
