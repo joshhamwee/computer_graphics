@@ -579,6 +579,35 @@ void filledRasterisedTriangles(){
     depthBuffer[i] = std::numeric_limits<float>::infinity();
   }
   for (size_t i = 0; i < triangles.size(); i++) {
+
+    //calculate triangle's surface normal
+    vec3 v0v1 = triangles[i].vertices[1] - triangles[i].vertices[0];
+    vec3 v0v2 = triangles[i].vertices[2] - triangles[i].vertices[0];
+    vec3 normal = glm::cross(v0v2,v0v1);
+
+    //calculate vector from triangle to camera
+    vec3 triangle_position((triangles[i].vertices[0].x+triangles[i].vertices[1].x+triangles[i].vertices[2].x)/3,(triangles[i].vertices[0].y+triangles[i].vertices[1].y+triangles[i].vertices[2].y)/3,(triangles[i].vertices[0].z+triangles[i].vertices[1].z+triangles[i].vertices[2].z)/3);
+    vec3 triangle_to_camera = camera - triangle_position;
+    float magnitude = glm::length(triangle_to_camera);
+    std::cout << magnitude << '\n';
+
+    //if triangle faces away from camera -> ignore and move onto next triangle (use dot product of normal and vector to check if it is facing away)
+    float triangle_orientation = glm::dot(normal,triangle_to_camera);
+    //std::cout << triangle_orientation << '\n';
+    if (triangle_orientation > 0) {
+      continue;
+    }
+    if (magnitude < 3 || magnitude > 30 ) {
+      std::cout << "here" << '\n';
+      continue;
+    }
+
+    // if triangle is really far away from camera -> ignore and move onto next triangle
+
+    // if triangle is too close to camaera -> ignore and move onto next triangle
+
+
+
     CanvasTriangle tempTriangle;
     for (size_t j = 0; j < 3; j++) {
       float x3D = (triangles[i].vertices[j].x);
@@ -795,7 +824,7 @@ Colour getClosestReflection(vec3 rayDirection, vec3 raySource){
       mat3 DEMatrix((rayDirection),e0,e1);
       vec3 possibleSolution = glm::inverse(DEMatrix) * SPVector;
 
-      if (possibleSolution[1] > 0.0 && possibleSolution[2] > 0.0 && (possibleSolution[1] + possibleSolution[2] < 1.0) && possibleSolution[0] >= 0.0) {
+      if (possibleSolution[1] > 0.0 && possibleSolution[2] > 0.0 && (possibleSolution[1] + possibleSolution[2] < 1.0) && possibleSolution[0] >= 3 && possibleSolution[0] <= 30) {
         if(possibleSolution[0] < currentClosestReflectedIntersection.distanceFromCamera && possibleSolution[0] > 1){
           vec3 intersection = triangles[i].vertices[0] + possibleSolution[1]*e0 + possibleSolution[2]*e1;
           currentClosestReflectedIntersection.distanceFromCamera = possibleSolution[0];
