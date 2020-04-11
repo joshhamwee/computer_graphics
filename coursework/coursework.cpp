@@ -689,6 +689,20 @@ bool hardShadow(RayTriangleIntersection currentTriangle){
   }
 }
 
+bool softShadow(RayTriangleIntersection currentTriangle, vec3 light_position){
+  vec3 rayDirectionShadows = light_position - currentTriangle.intersectionPoint;
+  rayDirectionShadows = glm::normalize(-rayDirectionShadows);
+  RayTriangleIntersection closestIntersectionShadow = getClosestIntersection(rayDirectionShadows, currentTriangle.intersectionPoint);
+  float distanceToIntersection = glm::length(currentTriangle.intersectionPoint - closestIntersectionShadow.intersectionPoint);
+  float distanceToLight = glm::length(lightPosition - currentTriangle.intersectionPoint);
+  if(distanceToIntersection < distanceToLight && closestIntersectionShadow.triangleIndex != currentTriangle.triangleIndex){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
 void filledRaytracedTriangles(){
   //Make sure we have the correct position of the image plane in the world co-ordinates
   vec3 topRightImagePlaneWorld(0,0,0);
@@ -723,7 +737,7 @@ void filledRaytracedTriangles(){
       RayTriangleIntersection currentTriangleBOTTOM = getClosestIntersection(rayDirectionBOTTOM, camera);
 
       if (currentTriangle.distanceFromCamera != std::numeric_limits<float>::max()) {
-        if (lightingType == 1 || lightingType == 2) {
+        if (lightingType == 1 || lightingType == 2 || lightingType == 3) {
           //Apply diffuseLighting to all the triangles from the rays
           float brightness = diffuseLighting(currentTriangle);
           float brightnessLEFT = diffuseLighting(currentTriangleLEFT);
@@ -747,6 +761,31 @@ void filledRaytracedTriangles(){
             }
             if (hardShadow(currentTriangleBOTTOM)) {
               brightnessBOTTOM = 0.1f;
+            }
+          }
+          vec3 lp1(-0.2334011,4,-3.043968);
+          vec3 lp2(-0.2,4,-3.043968);
+          vec3 lp3(-0.262,4,-3.043968);
+          vec3 lp4(-0.2334011,4,-2.74);
+          vec3 lp5(-0.2334011,4,-3.343968);
+
+
+          if (lightingType == 3) {
+            brightness = 0.5f;
+            if (softShadow(currentTriangle, lp1)) {
+              brightness -= 0.1f;
+            }
+            if (softShadow(currentTriangle, lp2)) {
+              brightness -= 0.1f;
+            }
+            if (softShadow(currentTriangle, lp3)) {
+              brightness -= 0.1f;
+            }
+            if (softShadow(currentTriangle, lp4)) {
+              brightness -= 0.1f;
+            }
+            if (softShadow(currentTriangle, lp5)) {
+              brightness -= 0.1f;
             }
           }
 
