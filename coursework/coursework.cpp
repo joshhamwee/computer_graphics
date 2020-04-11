@@ -167,6 +167,11 @@ void handleEvent(SDL_Event event)
       lightingType = 2;
       mirroredBox = !mirroredBox;
     }
+    else if(event.key.keysym.sym == SDLK_7){
+      drawType = 3;
+      lightingType = 3;
+      mirroredBox = false;
+    }
     else if(event.key.keysym.sym == SDLK_w){
       float theta = -PI/200;
       mat3 rotationMatrix(vec3(1.0,0.0,0.0),vec3(0.0,cos(theta),-sin(theta)),vec3(0.0,sin(theta),cos(theta)));
